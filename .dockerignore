@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+.turbo
+
+node_modules
+**/node_modules
+
+**/.next
+**/.turbo
+
+tmp_hostinger_deploy_on_vps
