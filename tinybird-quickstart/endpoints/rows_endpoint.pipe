@@ -1,0 +1,26 @@
+
+DESCRIPTION >
+    Ranks EV models with optional type and limit parameters.
+
+NODE endpoint
+SQL >
+    %
+    SELECT
+        make,
+        model,
+        electric_vehicle_type AS type,
+        count() AS registrations
+    FROM rows
+    {% if defined(ev_type) %}
+    WHERE electric_vehicle_type = {{ String(ev_type) }}
+    {% end %}
+    GROUP BY make, model, type
+    ORDER BY registrations DESC, make ASC, model ASC
+    {% if defined(limit) %}
+    LIMIT {{ Int32(limit) }}
+    {% else %}
+    LIMIT 20
+    {% end %}
+
+TYPE ENDPOINT
+            
