@@ -16,6 +16,8 @@ This repository is configured to auto-deploy on every push to `main` using:
 
 ## 2. GitHub Repository Configuration
 
+Use `deploy/.env.hostinger.example` as the canonical variable checklist.
+
 Add these GitHub **Secrets**:
 
 - `HOSTINGER_API_KEY`
@@ -58,10 +60,17 @@ Optional variables:
 
 - `NEXT_PUBLIC_APP_NAME` (defaults to `Dub`)
 - `TINYBIRD_API_URL` (defaults to `https://api.tinybird.co`)
+- `QSTASH_URL` (optional override; defaults to Upstash hosted URL)
 - `SMTP_HOST` (defaults to `localhost`)
 - `SMTP_PORT` (defaults to `1025`)
 
 ## 3. Deploy Flow
+
+Pre-flight check (recommended):
+
+```bash
+pwsh -NoProfile -File deploy/validate-hostinger-env.ps1 -EnvFile deploy/.env.hostinger.example
+```
 
 1. Push to `main`.
 2. GitHub Actions triggers `.github/workflows/deploy-hostinger-vps.yml`.

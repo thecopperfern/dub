@@ -6,6 +6,25 @@ import { DUB_DOMAINS_ARRAY } from "@dub/utils";
 import { NextResponse } from "next/server";
 import * as z from "zod/v4";
 
+const DEFAULT_DOMAIN_SYSTEM_FIELDS = new Set(["id", "projectId"]);
+
+const mapFieldToDomain = (field: string) => {
+  const matched = DUB_DOMAINS_ARRAY.find(
+    (domain) => domain.replace(".", "") === field,
+  );
+
+  if (matched) {
+    return matched;
+  }
+
+  // Backward compatibility for self-hosted installs that still store `dubsh`.
+  if (field === "dubsh" && DUB_DOMAINS_ARRAY.length === 1) {
+    return DUB_DOMAINS_ARRAY[0];
+  }
+
+  return undefined;
+};
+
 // GET /api/domains/default - get default domains
 export const GET = withWorkspace(
   async ({ workspace, searchParams }) => {
@@ -15,28 +34,20 @@ export const GET = withWorkspace(
       where: {
         projectId: workspace.id,
       },
-      select: {
-        dubsh: true,
-        dublink: true,
-        chatgpt: true,
-        sptifi: true,
-        gitnew: true,
-        callink: true,
-        amznid: true,
-        ggllink: true,
-        figpage: true,
-      },
     });
 
     let defaultDomains: string[] = [];
 
     if (data) {
-      defaultDomains = Object.keys(data)
-        .filter((key) => data[key])
-        .map(
-          (domain) =>
-            DUB_DOMAINS_ARRAY.find((d) => d.replace(".", "") === domain)!,
+      defaultDomains = Object.entries(data)
+        .filter(
+          ([key, value]) =>
+            !DEFAULT_DOMAIN_SYSTEM_FIELDS.has(key) &&
+            typeof value === "boolean" &&
+            value,
         )
+        .map(([field]) => mapFieldToDomain(field))
+        .filter((domain): domain is string => Boolean(domain))
         .filter((domain) =>
           search ? domain?.toLowerCase().includes(search.toLowerCase()) : true,
         );
@@ -68,21 +79,36 @@ export const PATCH = withWorkspace(
       });
     }
 
+    const existingDefaults = await prisma.defaultDomains.findUnique({
+      where: {
+        projectId: workspace.id,
+      },
+    });
+
+    if (!existingDefaults) {
+      throw new DubApiError({
+        code: "not_found",
+        message: "Workspace default domains not found.",
+      });
+    }
+
+    const updateData = Object.fromEntries(
+      Object.entries(existingDefaults)
+        .filter(
+          ([key, value]) =>
+            !DEFAULT_DOMAIN_SYSTEM_FIELDS.has(key) && typeof value === "boolean",
+        )
+        .map(([key]) => {
+          const mappedDomain = mapFieldToDomain(key);
+          return [key, mappedDomain ? defaultDomains.includes(mappedDomain) : false];
+        }),
+    );
+
     const response = await prisma.defaultDomains.update({
       where: {
         projectId: workspace.id,
       },
-      data: {
-        dubsh: defaultDomains.includes("dub.sh"),
-        dublink: defaultDomains.includes("dub.link"),
-        chatgpt: defaultDomains.includes("chatg.pt"),
-        sptifi: defaultDomains.includes("spti.fi"),
-        gitnew: defaultDomains.includes("git.new"),
-        callink: defaultDomains.includes("cal.link"),
-        amznid: defaultDomains.includes("amzn.id"),
-        ggllink: defaultDomains.includes("ggl.link"),
-        figpage: defaultDomains.includes("fig.page"),
-      },
+      data: updateData,
     });
 
     return NextResponse.json(response);

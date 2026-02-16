@@ -44,6 +44,7 @@ jobs:
             UPSTASH_REDIS_REST_URL=${{ secrets.UPSTASH_REDIS_REST_URL }}
             UPSTASH_REDIS_REST_TOKEN=${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
             QSTASH_TOKEN=${{ secrets.QSTASH_TOKEN }}
+            QSTASH_URL=${{ vars.QSTASH_URL || '' }}
             QSTASH_CURRENT_SIGNING_KEY=${{ secrets.QSTASH_CURRENT_SIGNING_KEY }}
             QSTASH_NEXT_SIGNING_KEY=${{ secrets.QSTASH_NEXT_SIGNING_KEY }}
 
